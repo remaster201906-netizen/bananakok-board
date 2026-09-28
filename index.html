@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>바나나콕 코트 보드</title>
+<meta name="description" content="바나나콕 배드민턴 모임의 코트·대기 순서·참석자를 방 코드로 함께 보는 팀 편성 보드">
+<link rel="icon" href="assets/av0.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jua&family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body data-mode="connecting">
+<div id="app"><!-- ===== HOME ===== -->
+<section class="home" id="view-home">
+  <div class="home-card">
+    <div class="banner" role="img" aria-label="바나나콕 즐거운 배드민턴 모임"></div>
+    <div class="home-body">
+      <div class="setup-note" id="setup-note" hidden><b>Firebase 설정이 아직 없어요.</b> firebase-config.js 에 Firebase 웹 앱 설정값을 넣어 주세요. 설정 방법은 README.md 에 있어요.</div>
+      <button class="g yellow big" id="btn-create" type="button"><span class="l">방 만들기<small>오늘 모임 보드를 새로 열어요</small></span><span aria-hidden="true">▶</span></button>
+      <form class="join" id="join-form" autocomplete="off">
+        <label for="j-code">입장하기 · 방 코드 6자리</label>
+        <div class="join-row">
+          <input type="text" id="j-code" inputmode="numeric" maxlength="6" placeholder="000000" aria-label="방 코드">
+          <button class="g blue" type="submit">입장</button>
+        </div>
+        <p class="err" id="join-err" hidden></p>
+      </form>
+      <div class="recent" id="recent" hidden>
+        <h3 id="recent-title">최근 들어간 방</h3>
+        <div class="room-list" id="room-list"></div>
+      </div>
+      <div class="home-foot">
+        <span class="status js-status" data-s="connecting"><i></i><span>연결 중</span></span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ROOM ===== -->
+<section class="wrap" id="view-room" hidden>
+  <header class="room-top">
+    <div class="title-wrap">
+      <button class="back" id="btn-leave" type="button">← 처음 화면</button>
+      <h1 class="logo-text" id="club-name">바나나콕</h1>
+      <span class="tagline">즐거운 배드민턴 모임</span>
+      <span class="code-chip">방 코드 <b id="room-code">000000</b><button class="g sm sky" type="button" id="btn-copy">복사</button></span>
+    </div>
+    <div class="stats">
+      <div><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="4" fill="#2f7fe0"/><path d="M1 21c0-4 4-7 8-7s8 3 8 7z" fill="#2f7fe0"/><circle cx="17" cy="9" r="3" fill="#7fb4f0"/><path d="M15 14c4 0 8 2 8 6h-5c0-2-1-4-3-6z" fill="#7fb4f0"/></svg>참석 <b id="st-players">0명</b></div>
+      <div><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="9" r="6" fill="none" stroke="#2f7fe0" stroke-width="2.5"/><path d="M13.5 13.5 21 21" stroke="#2f7fe0" stroke-width="3" stroke-linecap="round"/></svg>경기 중 <b id="st-courts">0/0코트</b></div>
+      <div><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="10" fill="#2f7fe0"/><path d="M12 6v6l4 2" stroke="#fff" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>대기 <b id="st-queue">0경기</b></div>
+      <div><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="12" width="4" height="9" rx="1" fill="#2f7fe0"/><rect x="10" y="7" width="4" height="14" rx="1" fill="#2f7fe0"/><rect x="17" y="3" width="4" height="18" rx="1" fill="#2f7fe0"/></svg><b id="st-mode">실력 밸런스 편성</b></div>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <span class="status js-status" data-s="connecting"><i></i><span>연결 중</span></span>
+    <button class="g sm sky edit-only" id="btn-settings" type="button">⚙ 코트·편성 설정</button>
+    <button class="g sm red edit-only" id="btn-reset" type="button">↻ 초기화</button>
+  </div>
+
+  <section class="section">
+    <h2 class="sign">경기 코트</h2>
+    <div class="panel cream"><div class="courts" id="courts"></div></div>
+  </section>
+
+  <section class="section">
+    <h2 class="sign">게임 대기자</h2>
+    <div class="panel pink">
+      <div class="panel-tools edit-only">
+        <span class="hint"><span id="avail-hint"></span> · 대기 경기의 이름을 누르면 사람을 바꿀 수 있어요</span>
+        <span style="display:flex;gap:8px"><button class="g sm" id="btn-one" type="button">+ 1경기</button><button class="g sm yellow" id="btn-auto" type="button">자동 편성</button></span>
+      </div>
+      <div class="qwrap">
+        <div class="qmascot"><div class="bubble">대기<b id="q-count">0</b>경기</div><div class="wave" role="img" aria-label="손 흔드는 바나나콕 캐릭터"></div></div>
+        <ol class="queue" id="queue"></ol>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2 class="sign">오늘 참석</h2>
+    <div class="panel blue">
+      <div class="groups">
+        <form class="addbar edit-only" id="add-form" autocomplete="off">
+          <input type="text" id="f-name" placeholder="닉네임" maxlength="12" aria-label="닉네임">
+          <select id="f-gender" aria-label="성별"><option value="M">♂ 남</option><option value="F">♀ 여</option></select>
+          <select id="f-level" aria-label="급수"><option value="A">A조</option><option value="B">B조</option><option value="C" selected>C조</option><option value="D">D조</option><option value="초심">초심</option></select>
+          <label class="ck"><input type="checkbox" id="f-guest"> 게스트</label>
+          <button class="g sm green" type="submit">추가</button>
+          <button class="g sm" type="button" id="btn-batch">여러 명 한번에</button>
+        </form>
+        <span class="hint edit-only">방에 들어온 사람은 누구나 편성하고 고칠 수 있어요. 쉬고 싶은 사람은 "휴식"을 누르면 자동 편성에서 빠져요. 대기 경기에 있던 사람은 다른 사람으로 바로 바뀌고, 경기 중인 사람은 이번 경기가 끝나면 쉬어요. 쉬는 사람 4명을 누르면 직접 경기를 만들 수 있어요.</span>
+        <div class="glabel">회원 <span class="cnt" id="c-members">0</span></div>
+        <div class="roster" id="roster"></div>
+        <div class="glabel">게스트 <span class="cnt" id="c-guests">0</span></div>
+        <div class="roster" id="guests"></div>
+        <div class="glabel rest">휴식 중 <span class="cnt" id="c-rest">0</span></div>
+        <div class="roster" id="resting"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="selbar edit-only" id="selbar" hidden>
+    <span id="sel-text">0명 선택</span>
+    <span style="display:flex;gap:6px">
+      <button class="g sm sky" id="sel-cancel" type="button">선택 취소</button>
+      <button class="g sm yellow" id="sel-make" type="button" disabled>대기 명단에 추가</button>
+    </span>
+  </div>
+
+  <details class="hist" id="hist">
+    <summary>오늘 경기 기록 <span id="hist-count"></span></summary>
+    <ol id="hist-list"></ol>
+  </details>
+</section>
+
+<!-- ===== dialogs ===== -->
+<dialog id="dlg-create"><form class="dlg" method="dialog">
+  <h3>방 만들기</h3>
+  <p>6자리 입장 코드가 새로 만들어져요. 회원들에게 코드를 알려 주세요.</p>
+  <label class="row"><span>모임 이름</span><input type="text" id="c-club" maxlength="24" placeholder="예: 바나나콕 토요 모임"></label>
+  <label class="row"><span>코트 수</span><select id="c-count"><option>1</option><option>2</option><option>3</option><option selected>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label>
+  <div class="acts"><button class="g sm" value="cancel" type="submit">취소</button><button class="g sm yellow" value="ok" type="submit">만들기</button></div>
+</form></dialog>
+
+<dialog id="dlg-batch"><form class="dlg" method="dialog">
+  <h3>여러 명 한번에 등록</h3>
+  <p>한 줄에 한 명씩 <b>닉네임 / 성별 / 급수</b> 순서로 적어 주세요. 성별은 남·여, 급수는 A·B·C·D·초심이에요. 게스트는 줄 끝에 "게스트"를 띄어 쓰면 돼요. 성별을 빼면 남, 급수를 빼면 C조로 들어가요.</p>
+  <textarea id="batch-text" placeholder="스매싱킹 남 A&#10;셔틀요정, 여, B&#10;드롭장인 남 C 게스트&#10;배린이 여 초심"></textarea>
+  <div class="acts"><button class="g sm" value="cancel" type="submit">취소</button><button class="g sm green" value="ok" type="submit">등록</button></div>
+</form></dialog>
+
+<dialog id="dlg-settings"><form class="dlg" method="dialog">
+  <h3>코트·편성 설정</h3>
+  <label class="row"><span>모임 이름</span><input type="text" id="s-club" maxlength="24"></label>
+  <label class="row"><span>코트 수</span><select id="s-count"><option>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>7</option><option>8</option></select></label>
+  <div class="row"><span>코트 이름 / 메모</span><div class="court-rows" id="s-courts"></div></div>
+  <div class="row"><span>자동 편성 방식 · 어느 방식이든 게임 수가 적은 사람과 오래 기다린 사람이 먼저 들어가고, 최근에 같이 친 사람끼리는 되도록 다시 묶지 않아요</span>
+    <div class="radio">
+      <label><input type="radio" name="s-mode" value="balance"><span>실력 밸런스<small>두 팀 급수 합이 비슷하게 나눠요.</small></span></label>
+      <label><input type="radio" name="s-mode" value="level"><span>비슷한 급수끼리<small>급수가 가까운 4명을 한 경기로 묶어요.</small></span></label>
+      <label><input type="radio" name="s-mode" value="gender"><span>같은 성별끼리 (남복·여복)<small>남자 4명 또는 여자 4명으로 경기를 만들어요.</small></span></label>
+    </div>
+  </div>
+  <label class="ck"><input type="checkbox" id="s-auto"> 게임이 끝나면 대기 1번 경기를 빈 코트에 바로 올리기</label>
+  <div class="acts"><button class="g sm" value="cancel" type="submit">취소</button><button class="g sm yellow" value="ok" type="submit">저장</button></div>
+</form></dialog>
+
+
+<dialog id="dlg-swap"><div class="dlg">
+  <h3 id="sw-title">사람 바꾸기</h3>
+  <div class="sw-sec"><span>같은 경기에서 자리 바꾸기</span><div class="sw-list" id="sw-inner"></div></div>
+  <div class="sw-sec"><span>쉬는 인원과 교체 (게임 수 적은 순)</span><div class="sw-list" id="sw-outer"></div></div>
+  <div class="acts"><button class="g sm" type="button" id="sw-close">닫기</button></div>
+</div></dialog>
+
+<dialog id="dlg-reset"><form class="dlg" method="dialog">
+  <h3>초기화</h3>
+  <p><b>새 모임 시작</b>은 명단은 두고 코트·대기·게임 수·휴식·기록만 비워요. <b>명단까지 지우기</b>는 참석자도 모두 지워요. <b>방 삭제</b>는 이 방 코드를 없애요. 되돌릴 수 없어요.</p>
+  <div class="acts">
+    <button class="g sm" value="cancel" type="submit">취소</button>
+    <button class="g sm sky" value="soft" type="submit">새 모임 시작</button>
+    <button class="g sm cream" value="hard" type="submit">명단까지 지우기</button>
+    <button class="g sm red" value="delete" type="submit">방 삭제</button>
+  </div>
+</form></dialog>
+</div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
